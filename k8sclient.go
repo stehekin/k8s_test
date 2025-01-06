@@ -19,7 +19,8 @@ import (
 const containerdSockPath = "unix:///var/run/containerd/containerd.sock"
 
 func main() {
-	cri_containerd()
+	// cri_containerd()
+	cri_containerd_pid()
 }
 
 func kube() {
@@ -65,20 +66,46 @@ func cri_containerd() {
 		panic(err.Error())
 	}
 
-	// client := v1.NewRuntimeServiceClient(conn)
+	client := v1.NewRuntimeServiceClient(conn)
 
-	// request := v1.ListContainersRequest{}
+	request := v1.ListContainersRequest{}
 
-	// response, err := client.ListContainers(context.TODO(), &request)
-	// if err != nil {
-	// 	panic(err.Error())
-	// }
+	response, err := client.ListContainers(context.TODO(), &request)
+	if err != nil {
+		panic(err.Error())
+	}
 
-	// for _, c := range response.Containers {
-	// 	fmt.Printf("podSandboxId: %v\n", c.PodSandboxId)
-	// 	fmt.Printf("image: %v\n", c.Image)
-	// }
+	for _, c := range response.Containers {
+		fmt.Printf("%v\n", c)
+	}
+}
 
+func cri_containerd_pid() {
+	conn, err := grpc.NewClient(containerdSockPath, grpc.WithTransportCredentials(local.NewCredentials()))
+	if err != nil {
+		panic(err.Error())
+	}
+
+	client := v1.NewRuntimeServiceClient(conn)
+
+	request := v1.ContainerStatusRequest{
+		ContainerId: "720cc29a8cc98",
+		Verbose:     true,
+	}
+
+	stats, err := client.ContainerStatus(context.TODO(), &request)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println("%v\n", stats)
+}
+
+func cri_containerd_image() {
+	conn, err := grpc.NewClient(containerdSockPath, grpc.WithTransportCredentials(local.NewCredentials()))
+	if err != nil {
+		panic(err.Error())
+	}
 	iClient := v1.NewImageServiceClient(conn)
 	request := v1.ListImagesRequest{}
 	response, err := iClient.ListImages(context.TODO(), &request)
@@ -87,6 +114,7 @@ func cri_containerd() {
 	}
 
 	for _, i := range response.Images {
+		// You can find image URI here.
 		fmt.Printf("%v\n", i)
 	}
 }
