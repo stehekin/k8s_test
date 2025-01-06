@@ -20,7 +20,7 @@ const containerdSockPath = "unix:///var/run/containerd/containerd.sock"
 
 func main() {
 	// cri_containerd()
-	cri_containerd_pid()
+	cri_containerd_events()
 }
 
 func kube() {
@@ -78,6 +78,30 @@ func cri_containerd() {
 	for _, c := range response.Containers {
 		fmt.Printf("%v\n", c)
 	}
+}
+
+func cri_containerd_events() {
+	conn, err := grpc.NewClient(containerdSockPath, grpc.WithTransportCredentials(local.NewCredentials()))
+	if err != nil {
+		panic(err.Error())
+	}
+
+	client := v1.NewRuntimeServiceClient(conn)
+	request := v1.GetEventsRequest{}
+
+	eventClient, err := client.GetContainerEvents(context.TODO(), &request)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for {
+		response, err := eventClient.Recv()
+		if err != nil {
+			panic(err.Error())
+		}
+		fmt.Printf("%v\n", response)
+	}
+
 }
 
 func cri_containerd_pid() {
